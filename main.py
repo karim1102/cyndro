@@ -8,8 +8,12 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 import os
 
+# Configuration from environment variables
+# Set ALLOWED_ORIGINS in production, e.g., "https://cyndro.com,https://www.cyndro.com"
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000,http://127.0.0.1:5500").split(",")
+
 # Database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./pilot_program.db"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pilot_program.db")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
@@ -65,12 +69,13 @@ app = FastAPI(
 )
 
 # CORS middleware - allow requests from your frontend
+# Configure allowed origins via ALLOWED_ORIGINS environment variable in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
