@@ -214,9 +214,9 @@
         // Configure API URL based on environment
         // In production, set this to your actual API domain, e.g., 'https://api.cyndro.com'
         // Leave empty to use same-origin (when API is hosted on same domain)
-        const API_BASE_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:8000' 
-            : '';  // Empty = same origin in production
+        const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:8000'
+            : ''; // Empty = same origin in production
 
         document.getElementById('pilot-signup-form').addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -248,9 +248,14 @@
                     })
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonErr) {
+                    data = {};
+                }
 
-                if (response.ok) {
+                if (response.ok && data.success) {
                     // Success
                     messageDiv.style.display = 'block';
                     messageDiv.style.background = '#d1fae5';
@@ -261,7 +266,15 @@
                     form.reset();
                 } else {
                     // Error from API
-                    throw new Error(data.detail || 'Something went wrong');
+                    let errorMsg = 'Something went wrong';
+                    if (data && data.detail) {
+                        errorMsg = data.detail;
+                    } else if (data && data.message) {
+                        errorMsg = data.message;
+                    } else if (!response.ok) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMsg);
                 }
             } catch (error) {
                 // Network error or API error
@@ -292,7 +305,7 @@
                 </svg>
                 <span>cyndro</span>
             </div>
-            <p class="footer-text">© 2025 Cyndro. Pre-MVP. Building toward YC S26.</p>
+            <p class="footer-text">© 2026 Cyndro </p>
         </div>
     </footer>
 

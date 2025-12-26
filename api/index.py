@@ -60,10 +60,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],  # Allow all origins for local development
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"]   # Allow all headers
 )
 
 def get_db():
@@ -81,9 +81,9 @@ def read_root():
 def create_signup(signup: SignupRequest, db: Session = Depends(get_db)):
     existing_signup = db.query(PilotSignup).filter(PilotSignup.email == signup.email).first()
     if existing_signup:
-        raise HTTPException(
+        return JSONResponse(
             status_code=400,
-            detail="This email is already registered for the pilot program"
+            content={"success": False, "detail": "This email is already registered for the pilot program"}
         )
     db_signup = PilotSignup(
         name=signup.name,
@@ -92,7 +92,16 @@ def create_signup(signup: SignupRequest, db: Session = Depends(get_db)):
     db.add(db_signup)
     db.commit()
     db.refresh(db_signup)
-    return db_signup
+    return JSONResponse(
+        status_code=200,
+        content={
+            "success": True,
+            "id": db_signup.id,
+            "name": db_signup.name,
+            "email": db_signup.email,
+            "created_at": db_signup.created_at.isoformat()
+        }
+    )
 
 @app.get("/api/signups", response_model=list[SignupResponse])
 def get_signups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):

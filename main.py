@@ -13,7 +13,7 @@ import os
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000,http://127.0.0.1:5500").split(",")
 
 # Database setup
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pilot_program.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
