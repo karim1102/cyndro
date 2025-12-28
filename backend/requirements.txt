@@ -7,3 +7,27 @@ requests>=2.31.0
 
 psycopg2-binary
 
+# Email notification dependencies:
+#   - smtplib (standard library)
+#   - email.mime (standard library)
+#
+# Setup instructions:
+# 1. In your deployment environment, set the following environment variables:
+#    - NOTIFY_GMAIL_USER: The Gmail address to send notifications from (already set to zemouli.abdelkarim.2005@gmail.com)
+#    - NOTIFY_GMAIL_PASS: The Gmail app password (not your main password; see below)
+#
+# 2. For Gmail, you must use an App Password (not your main password). See:
+#    https://support.google.com/accounts/answer/185833
+#    - Enable 2-Step Verification on your Google account
+#    - Create an App Password for "Mail"
+#    - Use this app password for NOTIFY_GMAIL_PASS
+#
+# 3. If running locally, you can set these in your shell before starting the server:
+#    set NOTIFY_GMAIL_PASS=yourapppassword
+#
+# 4. If deploying to a cloud host, set these as environment variables in your service configuration.
+#
+# 5. To add your CEO's email, edit backend/main.py and replace 'ceo_email@gmail.com' with their real address.
+#
+# That's it! Now, whenever a new signup is created, both you and your CEO will get an email notification.
+
