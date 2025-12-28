@@ -1,11 +1,6 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-from fastapi.responses import JSONResponse, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import PlainTextResponse
-import re
-import time
+from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -13,8 +8,6 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 import os
 
-# Import the notification function
-from notify_email import send_signup_notification
 
 # Configuration from environment variables
 # Set ALLOWED_ORIGINS in production, e.g., "https://cyndro.com,https://www.cyndro.com"
@@ -82,8 +75,6 @@ app = FastAPI(
 )
 
 
-# Force HTTPS redirect (uncomment in production)
-# app.add_middleware(HTTPSRedirectMiddleware)
 
 # CORS middleware - allow requests from your frontend
 app.add_middleware(
@@ -93,33 +84,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
-
-# Security headers middleware
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        return response
-app.add_middleware(SecurityHeadersMiddleware)
-
-# Simple in-memory rate limiter (per IP, per endpoint)
-RATE_LIMIT = 5  # requests
-RATE_PERIOD = 60  # seconds
-rate_limit_cache = {}
-
-def rate_limiter(ip, endpoint):
-    now = int(time.time())
-    key = f"{ip}:{endpoint}:{now // RATE_PERIOD}"
-    count = rate_limit_cache.get(key, 0)
-    if count >= RATE_LIMIT:
-        return False
-    rate_limit_cache[key] = count + 1
-    return True
 
 
 # Dependency to get DB session
@@ -137,40 +101,21 @@ def read_root():
 
 
 @app.post("/api/signup", response_model=SignupResponse)
-def create_signup(request: Request, signup: SignupRequest, db: Session = Depends(get_db)):
-    """
-    Create a new pilot program signup
-    """
-    # Rate limiting
-    client_ip = request.client.host
-    if not rate_limiter(client_ip, "/api/signup"):
-        raise HTTPException(status_code=429, detail="Too many requests. Please try again later.")
-
-    # Server-side input validation
-    name = signup.name.strip()
-    email = signup.email.strip()
-    if not re.match(r"^[A-Za-z\s\-']{2,50}$", name):
-        raise HTTPException(status_code=400, detail="Invalid name. Only letters, spaces, hyphens, 2-50 chars.")
-    if not re.match(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
-        raise HTTPException(status_code=400, detail="Invalid email address.")
-
+def create_signup(signup: SignupRequest, db: Session = Depends(get_db)):
     # Check if email already exists
-    existing_signup = db.query(PilotSignup).filter(PilotSignup.email == email).first()
+    existing_signup = db.query(PilotSignup).filter(PilotSignup.email == signup.email).first()
     if existing_signup:
         raise HTTPException(
             status_code=400,
             detail="This email is already registered for the pilot program"
         )
-
-    # Sanitize input (basic)
-    safe_name = name.replace("<", "").replace(">", "").replace("&", "").replace("'", "").replace('"', "")
-
+    
     # Create new signup
     db_signup = PilotSignup(
-        name=safe_name,
-        email=email
+        name=signup.name,
+        email=signup.email
     )
-
+    
     db.add(db_signup)
     db.commit()
     db.refresh(db_signup)
@@ -181,17 +126,11 @@ def create_signup(request: Request, signup: SignupRequest, db: Session = Depends
         'ceo_email@gmail.com'  # <-- Replace with your CEO's email
     ]
     try:
-        send_signup_notification(safe_name, email, notify_emails)
+        send_signup_notification(signup.name, signup.email, notify_emails)
     except Exception as e:
         print(f"Notification email failed: {e}")
 
     return db_signup
-
-
-@app.get("/api/signups", response_model=list[SignupResponse])
-def get_signups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """
-    Get all pilot program signups (for admin purposes)
     """
     signups = db.query(PilotSignup).offset(skip).limit(limit).all()
     return signups

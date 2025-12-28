@@ -197,8 +197,8 @@
             <h2>Join the pilot program</h2>
             <p class="section-intro">Help us build the right solution for African SMEs. Limited spots available.</p>
             <form class="cta-form" id="pilot-signup-form">
-                <input type="text" name="name" id="signup-name" class="form-input" placeholder="Your name" required pattern="^[A-Za-z\s\-']{2,50}$" maxlength="50" autocomplete="name">
-                <input type="email" name="email" id="signup-email" class="form-input" placeholder="Your email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]+" maxlength="100" autocomplete="email">
+                <input type="text" name="name" id="signup-name" class="form-input" placeholder="Your name" required>
+                <input type="email" name="email" id="signup-email" class="form-input" placeholder="Your email" required>
                 <button type="submit" class="btn btn-primary" id="signup-submit">→ Request early access</button>
                 <div id="signup-message"
                     style="display: none; margin-top: 1rem; padding: 1rem; border-radius: 1rem; text-align: center;">
@@ -209,6 +209,8 @@
 
     <script>
         // Configure API URL based on environment
+        // In production, set this to your actual API domain, e.g., 'https://api.cyndro.com'
+        // For deployed site, use your Render backend URL below:
         const API_BASE_URL = window.location.hostname === 'localhost'
             ? 'http://localhost:8000'
             : 'https://cyndro.onrender.com';
@@ -224,24 +226,6 @@
 
             const name = nameInput.value.trim();
             const email = emailInput.value.trim();
-
-            // Client-side validation
-            const namePattern = /^[A-Za-z\s\-']{2,50}$/;
-            const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-            if (!namePattern.test(name)) {
-                messageDiv.style.display = 'block';
-                messageDiv.style.background = '#fee2e2';
-                messageDiv.style.color = '#991b1b';
-                messageDiv.textContent = '✗ Please enter a valid name (letters, spaces, hyphens, 2-50 chars).';
-                return;
-            }
-            if (!emailPattern.test(email)) {
-                messageDiv.style.display = 'block';
-                messageDiv.style.background = '#fee2e2';
-                messageDiv.style.color = '#991b1b';
-                messageDiv.textContent = '✗ Please enter a valid email address.';
-                return;
-            }
 
             // Disable submit button
             submitBtn.disabled = true;
