@@ -120,27 +120,17 @@ def create_signup(signup: SignupRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_signup)
 
-    # Send notification email to you and your CEO
-    notify_emails = [
-        'zemouli.abdelkarim.2005@gmail.com',
-        'ceo_email@gmail.com'  # <-- Replace with your CEO's email
-    ]
-    try:
-        send_signup_notification(signup.name, signup.email, notify_emails)
-    except Exception as e:
-        print(f"Notification email failed: {e}")
-
     return db_signup
-    """
+
+
+@app.get("/api/signups", response_model=list[SignupResponse])
+def get_signups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     signups = db.query(PilotSignup).offset(skip).limit(limit).all()
     return signups
 
 
 @app.get("/api/signups/{signup_id}", response_model=SignupResponse)
 def get_signup(signup_id: int, db: Session = Depends(get_db)):
-    """
-    Get a specific signup by ID
-    """
     signup = db.query(PilotSignup).filter(PilotSignup.id == signup_id).first()
     if signup is None:
         raise HTTPException(status_code=404, detail="Signup not found")
